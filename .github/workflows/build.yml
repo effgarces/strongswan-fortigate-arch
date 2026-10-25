@@ -1,0 +1,110 @@
+name: Build patched strongswan
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'        # Mondays 05:23 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Rebuild even if a release for this version already exists'
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ['patches.lock', 'scripts/**', '.github/workflows/build.yml']
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      build: ${{ steps.v.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          read -r ver rel < <(scripts/arch-version.sh)
+          rev="$(sed -n 's/^PATCH_REV=//p' patches.lock)"
+          tag="strongswan-${ver}-${rel}.${rev}"
+          build=true
+          if gh release view "$tag" >/dev/null 2>&1 && [ "${FORCE:-false}" != "true" ]; then
+            build=false
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "Arch ships $ver-$rel; release tag $tag; build=$build"
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 120
+    steps:
+      - name: Install tools and create build user
+        run: |
+          pacman -Syu --noconfirm --needed git python curl jq sudo
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          su builder -c "git config --global --add safe.directory '*' && cd '$GITHUB_WORKSPACE' && scripts/build.sh"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: out/
+          include-hidden-files: true
+          if-no-files-found: error
+
+  release:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: out
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.check.outputs.tag }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          mv out/RELEASE_NOTES.md "$RUNNER_TEMP/notes.md"
+          if [ "${FORCE:-false}" = "true" ]; then gh release delete "$TAG" --cleanup-tag --yes || true; fi
+          gh release create "$TAG" --title "strongswan ${TAG#strongswan-} (FortiGate patched)" \
+            --notes-file "$RUNNER_TEMP/notes.md" out/*
+
+  notify:
+    needs: [check, build, release]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Automated strongswan build failed"
+          body="The scheduled build failed: $RUN_URL
+          Common cause: a patch no longer applies to the new strongSwan version (look for 'patch' / 'FAILED' in the Build step) -- rebase it or wait for upstream."
+          n="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi

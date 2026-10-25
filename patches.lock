@@ -1,0 +1,20 @@
+# Pinned FortiGate patches for strongSwan (from Noneawe/strongswan-deb-build).
+# Nothing from that repo is copied here: scripts/fetch-patches.sh downloads
+# each patch from the pinned commit and refuses to continue if a SHA-512
+# does not match.  To move to a newer commit run scripts/update-lock.sh and
+# READ THE DIFF it shows before committing.
+#
+# PATCH_REV is appended to Arch's pkgrel (2 -> 2.<rev>).  Bump it whenever
+# this repo's build logic or the pinned patches change but Arch's version
+# does not, so a new release is produced.
+PATCH_REPO=Noneawe/strongswan-deb-build
+PATCH_COMMIT=580192d321065a9628779ce77962cfd8851c2d73
+PATCH_REV=1
+
+# name  sha512   (listed in the order they are applied -- order matters)
+eap_payload-fortigate cc581835c47db1ed14dbf41ba48094357f0c405c36b7cc2221f8d16204aa8edb6c6c05bab16166b529311693319c6618a538b38652974b0b65ddf7e21f89cff8
+eap_authenticator-fortigate 5be289190eab0f4872856a2970433c7fdf0c1574233a6de7d1912d198bb6734c9f4457b483d73a2e18f508e2d636de1eae40373700a71a1e43526d9cf4483ad5
+eap_gtc-otp-v3 b72dfd1d2138682a6af3d42a6908889eedb2687ff3977d262967b6da45e4915dd4a87b037a829102a459b293c6c996122d0b458882f8dd4e43a994ecbd52519b
+eap_authenticator-fortigate-pskauth 35db1b24c902e82d7a8845d9e48da2c060f2a3f30f239039d3e7b60e6ea85e18cc23510f52b509d8be8d94f16ad4a7f291d3ab289727fb95f070daba454819cb
+ike_auth-fortigate-fct a8056327e739e5c0dc051aba7f165638f635dea7fbbeeb45a7314bac5e90f6a7f1989dd6a9d5d3d548fadebdfe09b24cb9793b5c6a5c6114b9ccb1f7752f3642
+ike_vendor-forticlient-vid 34cce6852ecdc8513aae97ab130c264965c544839d1fd5ce172910718717c1daaf62b99ad3a5727b7474f28a6aecc4a8d6f90cd7db01d47a2754ba2aacdc9ea5

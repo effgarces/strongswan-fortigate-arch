@@ -1,0 +1,29 @@
+# Trimmed stand-in that mirrors the structure of Arch's strongswan PKGBUILD
+# (single-line source with brace expansion, multi-line checksums, prepare()
+# starting with cd).  Not the real file.
+pkgname=strongswan
+pkgver=6.1.0
+pkgrel=2
+pkgdesc='Open source IPsec implementation'
+arch=('x86_64')
+source=("https://download.strongswan.org/strongswan-${pkgver}.tar.bz2"{,.sig})
+validpgpkeys=("948F158A4E76A27BF3D07532DF42C170B34DBA77")
+sha512sums=('01cea929cea2535751b5ef23eddc780a3c32ffafee640a6d5cea9a52798d0ec7030107463e8ddcc73fd0924b378a8676942297a42d79319207ecf7716badcb5f'
+            'SKIP')
+
+prepare() {
+  cd ${pkgname}-${pkgver}
+  sed -i 's/$(PYTHON) -m build/$(PYTHON) -m build --wheel --no-isolation/' src/libcharon/plugins/vici/python/Makefile.am
+  autoreconf -fiv
+}
+
+build() {
+  cd ${pkgname}-${pkgver}
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd ${pkgname}-${pkgver}
+  make DESTDIR="${pkgdir}" install
+}
