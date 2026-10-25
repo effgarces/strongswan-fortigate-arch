@@ -53,7 +53,7 @@ PKG="${pkgs[0]}"
 cp "$PKG" "$OUT/"
 cp PKGBUILD "$OUT/PKGBUILD"
 makepkg --printsrcinfo > "$OUT/.SRCINFO"
-mkdir -p "$OUT/patches"; cp ./*.patch "$OUT/patches/"
+cp ./*.patch "$OUT/"   # flat, next to the PKGBUILD: releases can only hold files, and makepkg expects them here
 cat > "$OUT/BUILD_INFO.txt" <<INFO
 package:          $PKG
 arch version:     $PKGVER-$PKGREL
@@ -62,7 +62,7 @@ arch packaging:   https://gitlab.archlinux.org/archlinux/packaging/packages/stro
 patches:          https://github.com/$PATCH_REPO/tree/$PATCH_COMMIT  (SHA-512 pinned in patches.lock)
 built (UTC):      $(date -u +%Y-%m-%dT%H:%M:%SZ)
 INFO
-(cd "$OUT" && sha256sum "$PKG" PKGBUILD patches/*.patch > SHA256SUMS)
+(cd "$OUT" && sha256sum "$PKG" PKGBUILD ./*.patch > SHA256SUMS)
 
 cat > "$OUT/RELEASE_NOTES.md" <<NOTES
 Arch Linux \`strongswan\` **$PKGVER-$PKGREL** with the FortiGate compatibility patches from
@@ -76,7 +76,7 @@ sudo pacman -U $PKG
 sudo systemctl restart strongswan
 \`\`\`
 
-Not signed with a PGP key: verify the checksum, or build it yourself from the attached \`PKGBUILD\` and \`patches/\`.
+Not signed with a PGP key: verify the checksum, or build it yourself from the attached \`PKGBUILD\` and \`.patch\` files (put them in one folder and run \`makepkg -s\`).
 Source: strongSwan $PKGVER from download.strongswan.org (signature verified by makepkg) + the patches listed in \`BUILD_INFO.txt\`.
 NOTES
 echo "== done: $OUT"; ls -la "$OUT"

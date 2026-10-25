@@ -30,7 +30,7 @@ That also means **you must install new releases yourself** (security fixes
 included). Watch this repo's Releases, or "Watch -> Custom -> Releases".
 
 The packages are not PGP-signed. Verify the checksum, or rebuild from the
-attached `PKGBUILD` and `patches/` (`makepkg -s`).
+attached `PKGBUILD` and `.patch` files (download them into one folder, then `makepkg -s`).
 
 ## What the build does
 

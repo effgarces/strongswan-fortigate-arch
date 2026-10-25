@@ -87,7 +87,17 @@ jobs:
           FORCE: ${{ inputs.force }}
         run: |
           mv out/RELEASE_NOTES.md "$RUNNER_TEMP/notes.md"
-          if [ "${FORCE:-false}" = "true" ]; then gh release delete "$TAG" --cleanup-tag --yes || true; fi
+          # Remove leftovers of a failed earlier attempt (drafts), and an
+          # existing release of this tag when a rebuild was forced.
+          gh api --paginate "repos/$GH_REPO/releases" \
+            --jq ".[] | select(.tag_name==\"$TAG\") | [.id, .draft] | @tsv" |
+          while read -r id draft; do
+            if [ "$draft" = "true" ] || [ "${FORCE:-false}" = "true" ]; then
+              gh api -X DELETE "repos/$GH_REPO/releases/$id"
+              gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$TAG" || true
+            fi
+          done
+          # only plain files in out/ (the glob skips dotfiles such as .SRCINFO)
           gh release create "$TAG" --title "strongswan ${TAG#strongswan-} (FortiGate patched)" \
             --notes-file "$RUNNER_TEMP/notes.md" out/*
 
