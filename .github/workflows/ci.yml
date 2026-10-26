@@ -8,7 +8,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: shellcheck scripts/*.sh tests/*.sh
         continue-on-error: true   # advisory
       - run: python3 -m py_compile scripts/patch-pkgbuild.py

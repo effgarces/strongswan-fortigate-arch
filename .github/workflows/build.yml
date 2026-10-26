@@ -27,7 +27,7 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
       build: ${{ steps.v.outputs.build }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: v
         env:
           GH_TOKEN: ${{ github.token }}
@@ -57,12 +57,12 @@ jobs:
           pacman -Syu --noconfirm --needed git python curl jq sudo
           useradd -m builder
           echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build
         run: |
           chown -R builder:builder "$GITHUB_WORKSPACE"
           su builder -c "git config --global --add safe.directory '*' && cd '$GITHUB_WORKSPACE' && scripts/build.sh"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: package
           path: out/
@@ -75,7 +75,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: package
           path: out
