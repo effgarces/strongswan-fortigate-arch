@@ -2,7 +2,7 @@ name: Build patched strongswan
 
 on:
   schedule:
-    - cron: '23 */6 * * *'        # Mondays 05:23 UTC
+    - cron: '23 */6 * * *'        # Every six hours
   workflow_dispatch:
     inputs:
       force:

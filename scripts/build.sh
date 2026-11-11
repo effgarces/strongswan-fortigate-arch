@@ -32,19 +32,20 @@ got_ver="$(sed -n 's/^pkgver=//p' PKGBUILD | head -1)"; got_rel="$(sed -n 's/^pk
 if compgen -G "keys/pgp/*.asc" >/dev/null; then
   gpg --batch --import keys/pgp/*.asc
 else
-  for fpr in $(sed -n '/^validpgpkeys/,/)/p' PKGBUILD | grep -oE '[0-9A-Fa-f]{40}'); do
+  while read -r fpr; do
     ok=0
-    for try in 1 2 3; do
-      gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys "$fpr" && { ok=1; break; }; sleep 5
+    for _ in 1 2 3; do
+      gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys "$fpr" </dev/null && { ok=1; break; }
+      sleep 5
     done
     [ "$ok" = 1 ] || die "could not fetch signing key $fpr"
-  done
+  done < <(sed -n '/^validpgpkeys/,/)/p' PKGBUILD | grep -oE '[0-9A-Fa-f]{40}')
 fi
 
 "$ROOT/scripts/fetch-patches.sh" "$WORK/pkg"
 python3 -I "$ROOT/scripts/patch-pkgbuild.py" PKGBUILD "$WORK/pkg"
 
-export MAKEFLAGS="-j$(nproc)"
+MAKEFLAGS="-j$(nproc)"; export MAKEFLAGS
 makepkg --syncdeps --noconfirm --nocheck --cleanbuild 2>&1 | tee "$WORK/makepkg.log"
 
 pkgs=(strongswan-[0-9]*.pkg.tar.*)

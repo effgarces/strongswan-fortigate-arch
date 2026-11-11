@@ -36,7 +36,7 @@ pass "fails loudly without a checksum array"
 # 4. no prepare() -> one is created before build()
 awk '/^prepare\(\)/{skip=1} skip&&/^}/{skip=0;next} !skip' tests/fixtures/PKGBUILD > "$T/noprep"
 python3 scripts/patch-pkgbuild.py "$T/noprep" "$T/p" >/dev/null
-grep -q '^prepare() {' "$T/noprep" && bash -n "$T/noprep"  || fail "prepare() not created"
+if ! { grep -q '^prepare() {' "$T/noprep" && bash -n "$T/noprep"; }; then fail "prepare() not created"; fi
 pass "creates prepare() when missing"
 
 # 5. fetch-patches: good and bad checksums
